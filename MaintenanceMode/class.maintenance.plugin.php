@@ -1,26 +1,4 @@
-<?php if (!defined('APPLICATION')) exit();
-
-/**
- * Define the plugin:
- */
-$PluginInfo['MaintenanceMode'] = array(
-	'Name'			=> 'Maintenance Mode',
-	'Description'	=> 'Puts your Site in maintenance state - so you can make modifications, backups, etc.',
-	'Version'		=> '1.3',
-	'Author'		=> 'Oliver Raduner',
-	'AuthorEmail'	=> 'vanilla@raduner.ch',
-	'AuthorUrl'		=> 'http://raduner.ch/',
-	'License'		=> 'Free',
-	'RequiredPlugins' => FALSE,
-	'HasLocale'		=> TRUE,
-	'RegisterPermissions' => FALSE,
-	'SettingsUrl'	=> FALSE,
-	'SettingsPermission' => FALSE,
-	'MobileFriendly' => TRUE,
-	'RequiredApplications' => array('Vanilla' => '>=2.0.9')
-);
-
-
+<?php
 /**
  * Maintenance Plugin
  *
@@ -28,25 +6,43 @@ $PluginInfo['MaintenanceMode'] = array(
  * Extremely useful if you need to make some maintenance in the background,
  * without wanting to take the whole site offline.
  *
- * @version 1.3
- * @since 1.0
- * @date 13-JAN-2011
  * @author Oliver Raduner <vanilla@raduner.ch>
- * 
- * @Todo Integrate working "locales" of the Maintenance Notice to the Plugin...
+ * @link https://open.vanillaforums.com/addon/maintenancemode-plugin
+ * @link https://github.com/oliveratgithub/vanillaforums-MaintenanceMode
+ *
+ * @version 3.3
+ * @since 1.0 13-JAN-2011 Oliver Raduner <vanilla@raduner.ch> Plugin class added
+ * @since 1.2 Oliver Raduner <vanilla@raduner.ch> Minor enhancements
+ * @since 1.3 06-JAN-2014 TienerForums <https://github.com/TienerForums> Translated for Dutch added
+ * @since 3.3 03-JAN-2020 Oliver Raduner <vanilla@raduner.ch> Compatibilitiy with Vanilla Release 3.3
  */
 class MaintenanceModePlugin extends Gdn_Plugin
 {
-	
+	/** @var bool */
+	var $isAdmin;
+
 	/**
-	 * Hack the Base Render in order to achieve our goal
-	 * 
-	 * @version 1.2
-	 * @since 1.0
+	 * Class constructor
 	 */
-	public function Base_Render_Before($Sender)
+	public function __construct($sender = '') {
+		parent::__construct($sender, 'plugins/MaintenanceMode');
+		$this->isAdmin = Gdn::session()->checkPermission('Garden.Settings.Manage');
+	}
+
+	/**
+	 * Hack the Base Render in order to display the Maintenance notice in the frontend only
+	 * 
+	 * @version 2.0
+	 * @since 1.0 13-JAN-2011 Oliver Raduner <vanilla@raduner.ch> Method added
+	 * @since 1.2 Oliver Raduner <vanilla@raduner.ch> Excluded Admin pages from the Maintenance overlay
+	 * @since 2.0 03-JAN-2020 Oliver Raduner <vanilla@raduner.ch> Changed output of CSS to a .css-File & updated head inject
+	 */
+	public function Base_Render_Before($sender)
 	{
-		// Don't display Maintenance overlay anywhere in the Admin area...
+		/** Cast a message popup for site managers */
+		if ($this->isAdmin) $sender->informMessage(Anchor(T('MaintenanceModeOn'), '/settings/plugins/enabled#maintenancemode-addon'), ['dissmissable' => false]);
+
+		/** Don't display Maintenance overlay anywhere in the Admin area... */
 		$AdminAreas =  array(	'DashboardController',
 								'SettingsController',
 								'PluginsController',
@@ -59,54 +55,49 @@ class MaintenanceModePlugin extends Gdn_Plugin
 								'AuthenticationController',
 								'UtilityController',
 								'EntryController');
-		if (InArrayI($Sender->ControllerName, $AdminAreas)) return;
-		
-		// Define the CSS to display the maintenance overlay
-		$CustomCss = '
-			<style type="text/css">
-			html { height: 100%; background: url("'.C('Garden.WebRoot').$this->GetResource("images/maintenance.png", FALSE, FALSE).'") no-repeat center 0%; margin: 0; }
-			body { visibility:hidden; overflow:hidden; text-align:center; }
-			div#maintenance {
-				position:absolute;
-				visibility: visible;
-				display: block;
-				left: 50%;
-				margin-left: -150px;
-				width: 320px;
-				top: 300px;
-				color: #777;
-				font-weight: bold;
-				font-size: 14pt;
-			}
-			#maintenance small { font-size: 8pt; font-weight: normal; }
-			</style>
-		';
-		
-		// Add the custom CSS styles to the Head
-		$Sender->Head->AddString($CustomCss);
+		if (InArrayI($sender->ControllerName, $AdminAreas)) return;
+
+		/** Add the custom CSS styles to the Head */
+		if ($this->isAdmin !== true) $sender->addCssFile('maintenancemode.css', 'plugins/MaintenanceMode');
 	}
-	
-	
+
 	/**
 	 * Hack the Base Body output in the bottom (after whole page is there)
 	 *
-	 * @version 1.2
-	 * @since 1.0
+	 * @version 2.0
+	 * @since 1.0 13-JAN-2011 Oliver Raduner <vanilla@raduner.ch> Method added
+	 * @since 1.0 13-JAN-2011 Oliver Raduner <vanilla@raduner.ch> Minor enhancements
+	 * @since 2.0 03-JAN-2020 Oliver Raduner <vanilla@raduner.ch> Reworked HTML output
 	 */
-	public function Base_AfterBody_Handler($Sender)
+	public function Base_AfterBody_Handler($sender)
 	{
-		// Make a new div to display the maintenance notice
-		echo '<div id="maintenance">'.T('MaintenanceNotice').'<br />
-		<a href="'.Url('/').'dashboard/settings"><small>→ Site Settings</small></a></div>';
+		/** For Admins / Site Managers, do not show the regular Maintenance overlay */
+		if ($this->isAdmin) return;
+
+		/** Display the maintenance notice for all other users & visitors */
+		//$sender->render($this->getView('notice.php')); // DISABLED due to Loop in rendering output
+		$html = '<div id="maintenance-wrapper">
+					<div id="maintenance-notice">
+						<h4>'.T('MaintenanceNotice').'</h4>
+						<a href="'.Url('/').'dashboard/settings"><small>&rarr; Site Settings</small></a>
+					</div>
+				</div>';
+		echo $html;
 	}
-	
-	
+
 	/**
-	 * Initialize anything
+	 * Initialize things when enabling plugin
 	 *
 	 * @version 1.0
-	 * @since 1.0
+	 * @since 1.0 13-JAN-2011 Oliver Raduner <vanilla@raduner.ch> Method added
 	 */
-	public function Setup() {  }	
+	public function Setup() { }
 
+	/**
+	 * Cleanup stuff upon disabling the plugin
+	 *
+	 * @version 1.0
+	 * @since 1.0 03-JAN-2020 Oliver Raduner <vanilla@raduner.ch> Method added
+	 */
+	public function OnDisable() { }
 }

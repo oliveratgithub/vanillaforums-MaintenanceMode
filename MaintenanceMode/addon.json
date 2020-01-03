@@ -1,0 +1,21 @@
+{
+    "name": "Maintenance Mode",
+    "description": "The original maintenance addon for Vanilla. Puts your Site into a maintenance state - so you can take care of modifications, backups, etc.",
+    "version": "3.3",
+    "mobileFriendly": true,
+    "hasLocale": true,
+    "icon": "icon.png",
+    "key": "maintenancemode",
+    "type": "addon",
+    "authors": [
+        {
+            "name": "Oliver Raduner",
+            "email": "vanilla@raduner.ch",
+            "homepage": "https://raduner.ch/"
+        }
+    ],
+    "require": {
+        "vanilla": ">=3.0",
+        "dashboard": ">=3.0"
+    }
+}

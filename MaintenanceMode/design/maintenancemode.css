@@ -1,0 +1,27 @@
+html { height: 100%; margin: 0; }
+body { visibility:hidden; overflow:hidden; text-align:center; }
+div#maintenance-wrapper {
+	position: fixed;
+	z-index: 10;
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+    background: #fff url('./maintenance.png') no-repeat center 0%;
+}
+div#maintenance-notice {
+	display: block;
+	margin-left: auto;
+	margin-top: 300px;
+	color: #777;
+	font-weight: bold;
+	font-size: 14pt;
+}
+div#maintenance-notice a,
+div#maintenance-notice a:link
+div#maintenance-notice a:visited {
+	font-size: 12px;
+	font-weight: normal;
+	color: blue;
+}
+div#maintenance-notice a:hover { color: orange; }
